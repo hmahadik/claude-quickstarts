@@ -1,52 +1,35 @@
 # Autonomous Coding Agent Demo
 
-A minimal harness demonstrating long-running autonomous coding with the Claude Agent SDK. This demo implements a two-agent pattern (initializer + coding agent) that can build complete applications over multiple sessions.
+A minimal harness demonstrating long-running autonomous coding with Claude. This demo implements a two-agent pattern (initializer + coding agent) that can build complete applications over multiple sessions.
+
+Two implementations are available:
+- **CLI Harness** (recommended): Uses Claude Code CLI via subprocess - simpler setup, fewer dependencies
+- **SDK Version**: Uses Claude Agent SDK directly - more control, programmatic access
 
 ## Prerequisites
 
-**Required:** Install the latest versions of both Claude Code and the Claude Agent SDK:
-
+**Claude Code CLI** (required for CLI harness):
 ```bash
-# Install Claude Code CLI (latest version required)
 npm install -g @anthropic-ai/claude-code
-
-# Install Python dependencies
-pip install -r requirements.txt
+claude --version
 ```
 
-Verify your installations:
-```bash
-claude --version  # Should be latest version
-pip show claude-code-sdk  # Check SDK is installed
-```
-
-**API Key:** Set your Anthropic API key:
+**API Key:**
 ```bash
 export ANTHROPIC_API_KEY='your-api-key-here'
 ```
 
-## Quick Start
+## Quick Start (CLI Harness)
 
 ```bash
-python autonomous_agent_demo.py --project-dir ./my_project
+cd cli
+python run_autonomous.py --project-dir ./my_project
 ```
 
 For testing with limited iterations:
 ```bash
-python autonomous_agent_demo.py --project-dir ./my_project --max-iterations 3
+python run_autonomous.py --project-dir ./my_project --max-iterations 3
 ```
-
-## Important Timing Expectations
-
-> **Warning: This demo takes a long time to run!**
-
-- **First session (initialization):** The agent generates a `feature_list.json` with 200 test cases. This takes several minutes and may appear to hang - this is normal. The agent is writing out all the features.
-
-- **Subsequent sessions:** Each coding iteration can take **5-15 minutes** depending on complexity.
-
-- **Full app:** Building all 200 features typically requires **many hours** of total runtime across multiple sessions.
-
-**Tip:** The 200 features parameter in the prompts is designed for comprehensive coverage. If you want faster demos, you can modify `prompts/initializer_prompt.md` to reduce the feature count (e.g., 20-50 features for a quicker demo).
 
 ## How It Works
 
@@ -59,39 +42,58 @@ python autonomous_agent_demo.py --project-dir ./my_project --max-iterations 3
 ### Session Management
 
 - Each session runs with a fresh context window
-- Progress is persisted via `feature_list.json` and git commits
-- The agent auto-continues between sessions (3 second delay)
+- Progress persists via `feature_list.json` and git commits
+- Auto-continues between sessions (3 second delay)
 - Press `Ctrl+C` to pause; run the same command to resume
+
+## Important Timing Expectations
+
+> **Warning: This demo takes a long time to run!**
+
+- **First session (initialization):** Generates `feature_list.json` with 200 test cases. Takes 10-20+ minutes and may appear to hang - this is normal.
+- **Subsequent sessions:** Each coding iteration can take 5-15 minutes.
+- **Full app:** Building all 200 features typically requires many hours across multiple sessions.
+
+**Tip:** Modify `prompts/initializer_prompt.md` to reduce the feature count (e.g., 20-50) for faster demos.
 
 ## Security Model
 
-This demo uses a defense-in-depth security approach (see `security.py` and `client.py`):
+The CLI harness uses Claude Code hooks for security:
 
-1. **OS-level Sandbox:** Bash commands run in an isolated environment
-2. **Filesystem Restrictions:** File operations restricted to the project directory only
-3. **Bash Allowlist:** Only specific commands are permitted:
-   - File inspection: `ls`, `cat`, `head`, `tail`, `wc`, `grep`
-   - Node.js: `npm`, `node`
-   - Version control: `git`
-   - Process management: `ps`, `lsof`, `sleep`, `pkill` (dev processes only)
+1. **Bash Command Allowlist:** Only specific commands are permitted via a PreToolUse hook
+2. **Filesystem Restrictions:** File operations restricted to the project directory via Claude Code's built-in sandboxing
 
-Commands not in the allowlist are blocked by the security hook.
+Allowed commands:
+- File inspection: `ls`, `cat`, `head`, `tail`, `wc`, `grep`
+- File operations: `cp`, `mkdir`, `chmod` (+x only)
+- Node.js: `npm`, `node`
+- Version control: `git`
+- Process management: `ps`, `lsof`, `sleep`, `pkill` (dev processes only)
+
+The security hook (`cli/.claude/hooks/validate-bash.py`) is automatically copied to the project directory on startup.
 
 ## Project Structure
 
 ```
 autonomous-coding/
-├── autonomous_agent_demo.py  # Main entry point
-├── agent.py                  # Agent session logic
-├── client.py                 # Claude SDK client configuration
-├── security.py               # Bash command allowlist and validation
-├── progress.py               # Progress tracking utilities
-├── prompts.py                # Prompt loading utilities
+├── cli/                          # CLI harness (recommended)
+│   ├── run_autonomous.py         # Entry point
+│   ├── orchestrator.py           # Session management
+│   ├── prompts.py                # Prompt loading
+│   ├── progress.py               # Progress utilities
+│   └── .claude/
+│       ├── settings.json         # Claude Code settings
+│       └── hooks/
+│           └── validate-bash.py  # Security hook
 ├── prompts/
-│   ├── app_spec.txt          # Application specification
-│   ├── initializer_prompt.md # First session prompt
-│   └── coding_prompt.md      # Continuation session prompt
-└── requirements.txt          # Python dependencies
+│   ├── app_spec.txt              # Application specification
+│   ├── initializer_prompt.md     # First session prompt
+│   └── coding_prompt.md          # Continuation session prompt
+├── autonomous_agent_demo.py      # SDK version entry point
+├── agent.py                      # SDK version agent logic
+├── client.py                     # SDK version client config
+├── security.py                   # SDK version security
+└── requirements.txt              # Python dependencies (SDK version)
 ```
 
 ## Generated Project Structure
@@ -103,33 +105,28 @@ my_project/
 ├── feature_list.json         # Test cases (source of truth)
 ├── app_spec.txt              # Copied specification
 ├── init.sh                   # Environment setup script
-├── claude-progress.txt       # Session progress notes
-├── .claude_settings.json     # Security settings
+├── .claude/                  # Claude Code settings and hooks
 └── [application files]       # Generated application code
 ```
 
 ## Running the Generated Application
 
-After the agent completes (or pauses), you can run the generated application:
-
 ```bash
-cd generations/my_project
+cd my_project
+./init.sh           # Run the setup script
 
-# Run the setup script created by the agent
-./init.sh
-
-# Or manually (typical for Node.js apps):
+# Or manually:
 npm install
 npm run dev
 ```
 
-The application will typically be available at `http://localhost:3000` or similar (check the agent's output or `init.sh` for the exact URL).
+The application will typically be available at `http://localhost:3000`.
 
 ## Command Line Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--project-dir` | Directory for the project | `./autonomous_demo_project` |
+| `--project-dir` | Directory for the project | Required |
 | `--max-iterations` | Max agent iterations | Unlimited |
 | `--model` | Claude model to use | `claude-sonnet-4-5-20250929` |
 
@@ -141,19 +138,36 @@ Edit `prompts/app_spec.txt` to specify a different application to build.
 
 ### Adjusting Feature Count
 
-Edit `prompts/initializer_prompt.md` and change the "200 features" requirement to a smaller number for faster demos.
+Edit `prompts/initializer_prompt.md` and change the "200 features" requirement.
 
 ### Modifying Allowed Commands
 
-Edit `security.py` to add or remove commands from `ALLOWED_COMMANDS`.
+Edit `cli/.claude/hooks/validate-bash.py` to add or remove commands from `ALLOWED_COMMANDS`.
+
+## SDK Version (Alternative)
+
+For more programmatic control, use the SDK-based implementation:
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run
+python autonomous_agent_demo.py --project-dir ./my_project
+```
+
+The SDK version uses `client.py` for Claude SDK configuration and `security.py` for bash validation.
 
 ## Troubleshooting
 
 **"Appears to hang on first run"**
-This is normal. The initializer agent is generating 200 detailed test cases, which takes significant time. Watch for `[Tool: ...]` output to confirm the agent is working.
+This is normal. The initializer agent is generating 200 detailed test cases. Watch for output to confirm the agent is working.
 
 **"Command blocked by security hook"**
-The agent tried to run a command not in the allowlist. This is the security system working as intended. If needed, add the command to `ALLOWED_COMMANDS` in `security.py`.
+The agent tried to run a command not in the allowlist. Add the command to `ALLOWED_COMMANDS` in the security hook if needed.
+
+**"claude CLI not found"**
+Ensure Claude Code is installed: `npm install -g @anthropic-ai/claude-code`
 
 **"API key not set"**
 Ensure `ANTHROPIC_API_KEY` is exported in your shell environment.
