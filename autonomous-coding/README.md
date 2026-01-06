@@ -26,6 +26,13 @@ cd cli
 python run_autonomous.py --project-dir ./my_project
 ```
 
+On first run, you'll be prompted:
+```
+What do you want to build? (brief description): A task management app with projects and due dates
+```
+
+Claude will then interview you to understand your requirements, generate `app_spec.txt`, and begin autonomous coding.
+
 For testing with limited iterations:
 ```bash
 python run_autonomous.py --project-dir ./my_project --max-iterations 3
@@ -33,11 +40,13 @@ python run_autonomous.py --project-dir ./my_project --max-iterations 3
 
 ## How It Works
 
-### Two-Agent Pattern
+### Three-Phase Flow
 
-1. **Initializer Agent (Session 1):** Reads `app_spec.txt`, creates `feature_list.json` with 200 test cases, sets up project structure, and initializes git.
+1. **Spec Generation (Interactive):** If no `app_spec.txt` exists, Claude interviews you to understand requirements and generates a detailed specification.
 
-2. **Coding Agent (Sessions 2+):** Picks up where the previous session left off, implements features one by one, and marks them as passing in `feature_list.json`.
+2. **Initializer Agent (Session 1):** Reads `app_spec.txt`, creates `feature_list.json` with 200 test cases, sets up project structure, and initializes git.
+
+3. **Coding Agent (Sessions 2+):** Picks up where the previous session left off, implements features one by one, and marks them as passing in `feature_list.json`.
 
 ### Session Management
 
@@ -86,7 +95,8 @@ autonomous-coding/
 │       └── hooks/
 │           └── validate-bash.py  # Security hook
 ├── prompts/
-│   ├── app_spec.txt              # Application specification
+│   ├── app_spec.txt              # Example application specification
+│   ├── spec_generator_prompt.md  # Spec generation interview prompt
 │   ├── initializer_prompt.md     # First session prompt
 │   └── coding_prompt.md          # Continuation session prompt
 ├── autonomous_agent_demo.py      # SDK version entry point
@@ -132,9 +142,9 @@ The application will typically be available at `http://localhost:3000`.
 
 ## Customization
 
-### Changing the Application
+### Providing Your Own Spec
 
-Edit `prompts/app_spec.txt` to specify a different application to build.
+To skip the interactive spec generation, create `app_spec.txt` in your project directory before running. The agent will use your existing spec instead of interviewing you.
 
 ### Adjusting Feature Count
 

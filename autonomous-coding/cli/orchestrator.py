@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Optional
 
 from progress import print_session_header, print_progress_summary
-from prompts import get_initializer_prompt, get_coding_prompt, copy_spec_to_project
+from prompts import get_initializer_prompt, get_coding_prompt, get_spec_generator_prompt
 
 
 # Configuration
@@ -54,6 +54,64 @@ def setup_project(project_dir: Path) -> None:
             hook_script.chmod(0o755)
 
     print(f"Set up .claude/ directory in {project_dir}")
+
+
+def run_interactive_spec_generation(
+    project_dir: Path,
+    description: str,
+    model: str,
+) -> bool:
+    """
+    Run an interactive Claude session to generate the app specification.
+
+    The user will have a conversation with Claude to flesh out requirements.
+    Claude will write app_spec.txt when enough information is gathered.
+
+    Args:
+        project_dir: Directory for the project
+        description: User's high-level description of what to build
+        model: Model to use
+
+    Returns:
+        True if app_spec.txt was created, False otherwise
+    """
+    print("\n" + "=" * 70)
+    print("  SPEC GENERATION (Interactive)")
+    print("=" * 70)
+    print("\nClaude will interview you to understand your requirements.")
+    print("Once the spec is generated, exit the session (Ctrl+C or /exit).")
+    print("-" * 70 + "\n")
+
+    system_prompt = get_spec_generator_prompt(description)
+
+    cmd = [
+        "claude",
+        "--system-prompt", system_prompt,
+        "--model", model,
+    ]
+
+    try:
+        # Run interactively (no -p flag, no capture)
+        subprocess.run(cmd, cwd=project_dir)
+    except KeyboardInterrupt:
+        print("\n\nSpec generation session ended.")
+    except FileNotFoundError:
+        print("Error: 'claude' CLI not found. Ensure Claude Code is installed.")
+        return False
+
+    # Check if spec was created
+    spec_file = project_dir / "app_spec.txt"
+    if spec_file.exists():
+        print("\n" + "=" * 70)
+        print("  app_spec.txt created successfully!")
+        print("=" * 70)
+        return True
+    else:
+        print("\n" + "=" * 70)
+        print("  Warning: app_spec.txt was not created.")
+        print("  Run again to retry spec generation.")
+        print("=" * 70)
+        return False
 
 
 def run_cli_session(
@@ -127,7 +185,26 @@ def run_autonomous_agent(
     # Set up .claude/ directory with hooks and settings
     setup_project(project_dir)
 
-    # Check if this is a fresh start or continuation
+    # Step 1: Check if app_spec.txt exists - if not, run spec generation
+    spec_file = project_dir / "app_spec.txt"
+    if not spec_file.exists():
+        print("\n" + "-" * 70)
+        print("No app_spec.txt found. Let's create one!")
+        print("-" * 70)
+        description = input("\nWhat do you want to build? (brief description): ").strip()
+
+        if not description:
+            print("Error: Please provide a description of what you want to build.")
+            return
+
+        spec_created = run_interactive_spec_generation(project_dir, description, model)
+        if not spec_created:
+            print("\nExiting. Run again to retry spec generation.")
+            return
+
+        print("\nContinuing to autonomous coding...\n")
+
+    # Step 2: Check if this is a fresh start or continuation
     tests_file = project_dir / "feature_list.json"
     is_first_run = not tests_file.exists()
 
@@ -140,8 +217,6 @@ def run_autonomous_agent(
         print("  This may appear to hang - it's working.")
         print("=" * 70)
         print()
-        # Copy the app spec into the project directory for the agent to read
-        copy_spec_to_project(project_dir)
     else:
         print("Continuing existing project")
         print_progress_summary(project_dir)

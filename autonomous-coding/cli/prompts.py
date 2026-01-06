@@ -29,6 +29,12 @@ def get_coding_prompt() -> str:
     return load_prompt("coding_prompt")
 
 
+def get_spec_generator_prompt(description: str) -> str:
+    """Load the spec generator prompt with the user's description."""
+    template = load_prompt("spec_generator_prompt")
+    return template.replace("{description}", description)
+
+
 def copy_spec_to_project(project_dir: Path) -> None:
     """Copy the app spec file into the project directory for the agent to read."""
     spec_source = PROMPTS_DIR / "app_spec.txt"
