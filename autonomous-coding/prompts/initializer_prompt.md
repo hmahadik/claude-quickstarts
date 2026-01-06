@@ -3,6 +3,12 @@
 You are the FIRST agent in a long-running autonomous development process.
 Your job is to set up the foundation for all future coding agents.
 
+### REQUIREMENTS
+
+**Chrome Browser:** This system uses Claude-in-Chrome for browser automation.
+Ensure Chrome is running with the Claude-in-Chrome extension installed before
+testing any UI features. Browser tools will not work without it.
+
 ### FIRST: Read the Project Specification
 
 Start by reading `app_spec.txt` in your working directory. This file contains
