@@ -19,6 +19,7 @@ from prompts import (
     get_spec_generator_prompt,
     get_enhancer_prompt,
     get_app_audit_prompt,
+    get_qa_prompt,
 )
 
 
@@ -288,10 +289,61 @@ def run_cli_session(
         "claude",
         "-p", prompt,
         "--model", model,
-        "--verbose",
         "--dangerously-skip-permissions",
         "--chrome",
-        "--output-format=stream-json",
+    ]
+
+    print(f"Running: {' '.join(cmd)}")
+    print(f"Working directory: {project_dir}")
+    print()
+
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=project_dir,
+            capture_output=False,  # Let output stream to terminal
+            text=True
+        )
+        return "", result.returncode
+    except FileNotFoundError:
+        print("Error: 'claude' CLI not found. Ensure Claude Code is installed.")
+        return "claude CLI not found", 1
+    except Exception as e:
+        return str(e), 1
+
+
+def run_qa_session(
+    project_dir: Path,
+    model: str,
+) -> tuple[str, int]:
+    """
+    Run a visual QA session after the coding agent completes.
+
+    The QA agent reviews the application visually, looking for UI/UX issues,
+    and documents any problems found for the next coding session to address.
+
+    Args:
+        project_dir: Directory to run in (cwd)
+        model: Model to use
+
+    Returns:
+        (output, return_code) tuple
+    """
+    print("\n" + "=" * 70)
+    print("  VISUAL QA AGENT")
+    print("=" * 70)
+    print("\nRunning hypercritical visual QA review...")
+    print("The QA agent will inspect the app and document any issues found.")
+    print("-" * 70 + "\n")
+
+    prompt = get_qa_prompt()
+
+    cmd = [
+        "claude",
+        "-p", prompt,
+        "--model", model,
+        "--dangerously-skip-permissions",
+        "--chrome",
     ]
 
     print(f"Running: {' '.join(cmd)}")
@@ -586,8 +638,28 @@ def run_autonomous_agent(
         print("\n" + "-" * 70)
 
         if return_code == 0:
-            print(f"\nSession completed. Auto-continuing in {AUTO_CONTINUE_DELAY_SECONDS}s...")
+            print(f"\nCoding session completed successfully.")
             print_progress_summary(project_dir)
+
+            # Run QA agent after successful coding sessions (skip first run which is just setup)
+            if not is_first_run or iteration > 1:
+                print(f"\nStarting QA review in {AUTO_CONTINUE_DELAY_SECONDS}s...")
+                time.sleep(AUTO_CONTINUE_DELAY_SECONDS)
+
+                qa_output, qa_return_code = run_qa_session(project_dir, model)
+
+                if qa_return_code == 0:
+                    print("\nQA review completed.")
+                else:
+                    print(f"\nQA session ended with code {qa_return_code}")
+                    if qa_output:
+                        print(f"Error: {qa_output}")
+
+                print_progress_summary(project_dir)
+            else:
+                print("\nSkipping QA for initialization session.")
+
+            print(f"\nAuto-continuing in {AUTO_CONTINUE_DELAY_SECONDS}s...")
             time.sleep(AUTO_CONTINUE_DELAY_SECONDS)
         else:
             print(f"\nSession ended with code {return_code}")

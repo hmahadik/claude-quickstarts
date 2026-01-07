@@ -46,6 +46,11 @@ def get_app_audit_prompt() -> str:
     return load_prompt("app_audit_prompt")
 
 
+def get_qa_prompt() -> str:
+    """Load the visual QA agent prompt."""
+    return load_prompt("qa_prompt")
+
+
 def copy_spec_to_project(project_dir: Path) -> None:
     """Copy the app spec file into the project directory for the agent to read."""
     spec_source = PROMPTS_DIR / "app_spec.txt"
