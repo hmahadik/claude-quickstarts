@@ -1,35 +1,51 @@
 {
   "permissions": {
-    "defaultMode": "acceptEdits",
     "allow": [
-      "Read(./**)",
-      "Write(./**)",
-      "Edit(./**)",
-      "Glob(./**)",
-      "Grep(./**)",
-      "Bash(*)",
-      "mcp__claude-in-chrome__tabs_context_mcp",
-      "mcp__claude-in-chrome__tabs_create_mcp",
-      "mcp__claude-in-chrome__navigate",
-      "mcp__claude-in-chrome__computer",
-      "mcp__claude-in-chrome__read_page",
-      "mcp__claude-in-chrome__find",
-      "mcp__claude-in-chrome__form_input",
-      "mcp__claude-in-chrome__get_page_text",
-      "mcp__claude-in-chrome__javascript_tool"
-    ]
+      "Bash(mkdir:*)",
+      "Bash(chmod:*)",
+      "Bash(python3:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(./scripts/install.sh:*)",
+      "Bash(systemctl:*)",
+      "Read(/home/harshad/activity-tracker-data/logs/**)",
+      "Read(/home/harshad/activity-tracker-data/logs/**)",
+      "Bash(git commit:*)",
+      "Bash(python:*)",
+      "Bash(journalctl:*)",
+      "Bash(curl:*)",
+      "Read(/home/harshad/.config/systemd/user/**)",
+      "Read(/home/harshad/activity-tracker-data/logs/**)",
+      "Read(/home/harshad/activity-tracker-data/logs/**)",
+      "Bash(sqlite3:*)",
+      "Bash(pkill:*)",
+      "Bash(kill:*)",
+      "Bash(xargs:*)",
+      "Bash(./venv/bin/python:*)",
+      "Bash(xdotool getwindowfocus getwindowname:*)",
+      "Bash(xdotool getwindowfocus:*)",
+      "Bash(xdotool help:*)",
+      "Bash(ps:*)",
+      "Skill(frontend-design)",
+      "WebFetch(domain:cdn.sanity.io)",
+      "Bash(git push:*)",
+      "Bash(if [ -f venv/bin/python ])",
+      "Bash(then ./venv/bin/python -m pytest tests/test_app_inference.py -v)",
+      "Bash(else python3 -m pip list)",
+      "Bash(fi)",
+      "Bash(git add:*)",
+      "Bash(./venv/bin/pip install:*)",
+      "Bash(test:*)",
+      "Bash(/home/harshad/projects/activity-tracker/venv/bin/python:*)",
+      "Bash(DISPLAY=:0 /home/harshad/projects/activity-tracker/venv/bin/python:*)",
+      "WebFetch(domain:192.168.100.142)",
+      "Bash(git -C /home/harshad/projects/activity-tracker status)",
+      "Bash(git -C /home/harshad/projects/activity-tracker log --oneline -10)",
+      "Bash(git -C /home/harshad/projects/activity-tracker diff)",
+      "Bash(pgrep:*)"
+    ],
+    "deny": [],
+    "ask": []
   },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/validate-bash.py"
-          }
-        ]
-      }
-    ]
-  }
+  "outputStyle": "default"
 }

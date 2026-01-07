@@ -68,6 +68,10 @@ For example, if this were a chat app, you should perform a test that logs into t
 
 ### STEP 4: CHOOSE ONE FEATURE TO IMPLEMENT
 
+**CRITICAL WARNING:**
+
+ONCE AGAIN, IT IS **CATASTROPHIC** TO CONTINUE IF YOU FOUND ANY ISSUES THAT YOU WERE NOT ABLE TO FIX AND VERIFY YOURSELF!
+
 Look at feature_list.json and find the highest-priority feature with "passes": false.
 
 Focus on completing one feature perfectly and completing its testing steps in this session before moving on to other features.
@@ -102,6 +106,8 @@ Use browser automation tools:
 - Use JavaScript evaluation to bypass UI (no shortcuts)
 - Skip visual verification
 - Mark tests passing without thorough verification
+
+**CRITICAL: DO NOT CONTINUE IF YOU WERE NOT ABLE TO PERFORM E2E VISUAL VERIFICATION**
 
 ### STEP 7: UPDATE feature_list.json (CAREFULLY!)
 
