@@ -19,9 +19,10 @@ def load_prompt(name: str) -> str:
     return prompt_path.read_text()
 
 
-def get_initializer_prompt() -> str:
-    """Load the initializer prompt."""
-    return load_prompt("initializer_prompt")
+def get_initializer_prompt(feature_count: int = 10) -> str:
+    """Load the initializer prompt with configurable feature count."""
+    template = load_prompt("initializer_prompt")
+    return template.replace("{feature_count}", str(feature_count))
 
 
 def get_coding_prompt() -> str:
@@ -29,10 +30,20 @@ def get_coding_prompt() -> str:
     return load_prompt("coding_prompt")
 
 
+def get_enhancer_prompt() -> str:
+    """Load the enhancer prompt for existing projects."""
+    return load_prompt("enhancer_prompt")
+
+
 def get_spec_generator_prompt(description: str) -> str:
     """Load the spec generator prompt with the user's description."""
     template = load_prompt("spec_generator_prompt")
     return template.replace("{description}", description)
+
+
+def get_app_audit_prompt() -> str:
+    """Load the app audit prompt for generating specs from existing codebases."""
+    return load_prompt("app_audit_prompt")
 
 
 def copy_spec_to_project(project_dir: Path) -> None:

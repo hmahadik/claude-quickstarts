@@ -29,6 +29,15 @@ Examples:
     # Start a new project
     python run_autonomous.py --project-dir ./my-app
 
+    # Start a new project with description and non-interactive spec generation
+    python run_autonomous.py --project-dir ./my-app --description "Build a claude.ai clone" --non-interactive
+
+    # Audit an existing project to generate a prescriptive spec
+    python run_autonomous.py --project-dir ./existing-app --audit
+
+    # Generate more or fewer features (default: 10)
+    python run_autonomous.py --project-dir ./my-app --feature-count 25
+
     # Continue with limited iterations
     python run_autonomous.py --project-dir ./my-app --max-iterations 5
 
@@ -58,6 +67,32 @@ Examples:
         help=f"Claude model to use (default: {DEFAULT_MODEL})",
     )
 
+    parser.add_argument(
+        "--description",
+        type=str,
+        default=None,
+        help="Project description for spec generation (avoids interactive prompt)",
+    )
+
+    parser.add_argument(
+        "--non-interactive",
+        action="store_true",
+        help="Run in non-interactive mode (generates spec automatically without interview)",
+    )
+
+    parser.add_argument(
+        "--audit",
+        action="store_true",
+        help="Audit existing codebase to generate a prescriptive spec (what it SHOULD do, not just what it does)",
+    )
+
+    parser.add_argument(
+        "--feature-count",
+        type=int,
+        default=10,
+        help="Number of features/tests to generate in feature_list.json (default: 10)",
+    )
+
     args = parser.parse_args()
 
     # Resolve project directory to absolute path
@@ -68,6 +103,10 @@ Examples:
         project_dir=project_dir,
         model=args.model,
         max_iterations=args.max_iterations,
+        description=args.description,
+        non_interactive=args.non_interactive,
+        audit=args.audit,
+        feature_count=args.feature_count,
     )
 
 
